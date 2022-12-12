@@ -1,0 +1,8 @@
+
+
+mkdir python
+cd python
+pip install psycopg2-binary -t .
+
+cd ..
+zip -r psycopg2.zip ./python

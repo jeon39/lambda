@@ -1,0 +1,59 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Send message to Bot Client
+  Triggered with SQS
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Runtime: python3.8
+    Timeout: 10
+    Handler: app.lambda_handler
+    MemorySize: 512
+    Layers:
+      - arn:aws:lambda:ap-northeast-2:531915313382:layer:psycopg2:5
+    Role:
+    Environment:
+      Variables:
+        TABLE_NAME: data-table
+
+Resources:
+  MyLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayterName: Request
+      Description: 
+      ContentUri: layer/
+      CompatibleRuntimes:
+        - python3.8
+      LicenseInfo: 'MIT'
+      RetentonPolicy: Retain
+  HelloWorldFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: hello_world/
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Architectures:
+        - x86_64
+      Policies: SQSPollerPolicy
+
+      Events:
+        # Event 정의 : SQS에 발송 메세지가 적재될 경우 발생하는 Event
+        LoadedMessageEvent:
+          Type: SQS
+          Properties:
+            #Queue: arn:aws:sqs:ap-northeast-2:531915313382:van_queue.fifo
+            Queue: !GetAtt SrcSqsQueue.Arn 
+            BatchSize: 10
+  SrcSqsQueue:
+    Type: AWS::SQS::Queue
+
+Outputs:
+  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
+  # Find out more about other implicit resources you can reference within SAM
+  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
+  HelloWorldFunction:
+    Description: "Hello World Lambda Function ARN"
+    Value: !GetAtt HelloWorldFunction.Arn

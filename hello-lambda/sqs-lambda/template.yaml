@@ -1,41 +1,17 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  hello-lambda
+  sqs-lambda
 
-  Sample SAM Template for hello-lambda
+  Triggered lambda function by SQS
+  lambda function send message to Bot Client
 
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
-  # 리소스 유형(Resource Type) 정의
-  # Backend -> lambda 호출 시 = AWS::Serverless:Function
-  # lambda -> Backend 호출 시 = AWS::Serverless:Function
-  # Bot Client -> lambda 호출 시 = AWS::Serverless::Api
   Function:
-    Runtime: python3.8
-    Timeout: 180
-    Handler: app.lambda_handler
-    MemorySize:
-    Role:
-    Environment:
-      Variables:
-        TABLE_NAME: data-table
-  Api:
-    EndpointConfiguration: REGIONAL
-    Cors: "'www.example.com"
-    Domain:
-      DomainName: www.my-domain.com
-      CertificateArn: my-valid-cert-arn
-      EndpointConfiguration: EDGE
-  SimpleTable:
-    SSESpecification:
-      SSEEnabled: true
+    Timeout: 3
 
 Resources:
-# 함수 속성(Function Property) 중 필수 항목 정의
-# CodeUri : lambda 배포 패키지 위치 (필수)
-# Handler : lambda 실행 핸들러 이름 (필수)
-# FunctionName : lambda 함수 이름 (필수)
   HelloWorldFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
@@ -45,25 +21,17 @@ Resources:
       Architectures:
         - x86_64
       Events:
-        # Event 정의 : SQS에 발송 메세지가 적재될 경우 발생하는 Event
-        SendMessage2Bot:
-          Type: SQS
-          Properties:
-            Queue: arn:aws:sqs:ap-northeast-2:531915313382:van_queue.fifo
-            BatchSize: 10
-            Enabled: true
-          DestinationConfig:
-            OnFailing:
-              Type: SQS
-              Destination: dead queue arn
-        # Event 정의 : 사용자가 예약 메세지를 정의한 경우 예약 시간에 발생하는 Event
-        ScheduledRun:
-          Type: CloudWatchEvent
         HelloWorld:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
             Path: /hello
             Method: get
+    Policies:
+      - SQSPollerPolicy:
+          QueueName:
+            !GetAtt MyQueue.QueueName
+  MyQueue:
+    Type: AWS::SQS::Queue
 
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
